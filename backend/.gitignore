@@ -1,0 +1,6 @@
+# Local build output
+/server
+*.exe
+*.test
+*.out
+coverage.out
