@@ -2,11 +2,48 @@
 
 A full stack calculator with both basic and advanced calc support. The interface is a React and TypeScript client. The calculation API is a Go REST service. Every arithmetic result is produced by the Go API. The browser sends operands and displays the response.
 
-The application is not deployed. It does not use a database, authentication, or Docker.
+The application is not deployed to a hosted environment. It does not use a database or authentication. Docker Compose can run the API and the client together.
+
+## Quick start
+
+```bash
+git clone https://github.com/imloshmitha/calculator-service.git
+cd calculator-service
+docker compose up --build
+```
+
+Open `http://localhost:3000`. `docker compose down` stops the containers. A local Go and Vite run, the API, and the tests are described below.
+
+## Project layout
+
+```text
+.
+├── AI_USAGE.md
+├── README.md
+├── backend/
+│   ├── cmd/server/main.go
+│   ├── go.mod
+│   └── internal/
+│       ├── calculator/
+│       └── handler/
+├── docker/
+│   ├── backend.Dockerfile
+│   ├── frontend.Dockerfile
+│   └── nginx.conf
+├── docker-compose.yml
+├── frontend/
+│   ├── package.json
+│   ├── src/
+│   └── vite.config.ts
+└── postman/
+    └── calculator-api.postman_collection.json
+```
+
+This is the main layout. `frontend/node_modules`, `frontend/dist`, and coverage output are generated and are not part of it.
 
 ## Technology Stack
 
-Versions in the "Used in this checkout" column were read from the lockfile or from the tools on this machine. Ranges in the "Project requirement" column come from `go.mod` or from dependency engine fields. `package.json` does not pin Node.js or npm.
+The checkout column lists versions from `package-lock.json` or from the tools used to develop and test this repository. The requirement column comes from `go.mod` or from dependency engine fields. `package.json` does not pin Node.js or npm.
 
 | Technology | Used in this checkout | Project requirement | Purpose |
 | --- | --- | --- | --- |
@@ -20,9 +57,8 @@ Versions in the "Used in this checkout" column were read from the lockfile or fr
 | Go `testing` and `net/http/httptest` | Included with Go 1.27.2 | Part of the Go toolchain | Backend unit and handler tests |
 | HTTP and JSON | `POST /api/calculate` with `Content-Type: application/json` | Same contract in the Go handler and `frontend/src/api.ts` | Frontend/backend communication |
 | npm | 10.9.7 | Not pinned | Frontend package management |
-| Git | 2.50.1 | Not pinned | Source control |
 
-This working copy is not a Git repository and has no remote URL.
+Source is published at https://github.com/imloshmitha/calculator-service.
 
 ## Features
 
@@ -51,22 +87,24 @@ Content-Type: application/json
 
 `backend/cmd/server` listens with `net/http` and passes the request to `backend/internal/handler`. The handler checks the method, decodes one JSON object, and calls `backend/internal/calculator`. That package returns a number or a sentinel error and does not know about HTTP. The handler maps the error to a JSON body. The client prints `result`, or replaces the main display with the error `message`.
 
-In development, Vite proxies `/api` to `http://localhost:8080` (`frontend/vite.config.ts`). `npm run build` writes a static client to `frontend/dist`. That build requests `/api/calculate` on the same origin. The proxy is not part of the build. Serving the static files from another origin requires the API on that same origin or a reverse proxy. The Go server does not send CORS headers. Nothing in this repository deploys either part.
+In development, Vite proxies `/api` to `http://localhost:8080` (`frontend/vite.config.ts`). `npm run build` writes a static client to `frontend/dist`. That build requests `/api/calculate` on the same origin. The Vite proxy is not part of the production build. The Docker image serves `/`, `/index.html`, `/favicon.svg`, and `/assets/` with Nginx. Nginx proxies `/api/`, `/health`, and every other path to the backend container, so an unknown path returns the API JSON `404`. The Go server does not send CORS headers.
 
 ## Prerequisites
 
-- Go 1.22 or newer. This checkout used Go 1.27.2.
-- Node.js `^22.12.0`, `^24.0.0`, or `>=26.0.0`, so both Vite and Vitest can run. This checkout used Node.js v22.22.2.
-- npm, to install frontend packages and run the scripts. This checkout used npm 10.9.7. The repository does not pin npm.
-- Git, to clone the repository. This machine has Git 2.50.1. The project files do not require a specific Git version.
+Versions used in this checkout are in the technology table.
+
+- Go 1.22 or newer.
+- Node.js that satisfies both Vite and Vitest, plus npm. npm is not pinned.
+- Git, to clone the repository.
+- Docker Engine and the Docker Compose plugin, for the quick start. [Install Docker](https://docs.docker.com/get-docker/). Docker Desktop includes Compose. Confirm with `docker compose version`.
 
 ## Getting Started
 
-The directory that contains `backend/` and `frontend/` is the repository root. This copy is not yet a Git repository, so replace the placeholder with the real GitHub URL after the remote exists.
+The directory that contains `backend/` and `frontend/` is the repository root.
 
 ```bash
-git clone <repository-url>
-cd <repository-directory>
+git clone https://github.com/imloshmitha/calculator-service.git
+cd calculator-service
 ```
 
 Start the API and the client in separate terminals.
@@ -78,7 +116,7 @@ cd backend
 go run ./cmd/server
 ```
 
-The process listens on port `8080` unless `PORT` is an integer from 1 through 65535.
+The process listens on port `8080` unless `PORT` is an integer from 1 through 65535. It allows 5 seconds to read request headers, 30 seconds to read a request, 15 seconds to write a response, and 120 seconds of idle keep-alive. `SIGINT` or `SIGTERM` stops the process and waits up to 8 seconds for in-flight requests to finish.
 
 ```bash
 PORT=9090 go run ./cmd/server
@@ -93,6 +131,38 @@ npm run dev
 ```
 
 Open the URL Vite prints. With the default Vite port that is `http://localhost:5173/`. The client calls `/api/calculate` on the Vite origin, and Vite forwards `/api` to `http://localhost:8080`. No `.env` file is required for the default ports. If `PORT` is not `8080`, calculations fail until the proxy target in `frontend/vite.config.ts` is changed to match.
+
+## Docker
+
+From the repository root, build and start both containers:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:3000`. The frontend is published on host port `3000`. The backend port is not published. Container-to-container requests use the service name `backend`, not `localhost`. Nginx routing is described under Architecture. No `.env` file is required.
+
+Stop the containers:
+
+```bash
+docker compose down
+```
+
+## Postman
+
+Import `postman/calculator-api.postman_collection.json`.
+
+In Postman, choose **Import**, then **files** or drag the collection file onto the window. The collection defines a `baseUrl` variable with the default `http://localhost:3000`.
+
+Start the Dockerized app first so the default `baseUrl` can reach the API. With the [Postman desktop app](https://learning.postman.com/docs/collections/running-collections/intro-to-collection-runs/), open the collection and choose **Run**. Leave `baseUrl` at `http://localhost:3000`. Each request checks the HTTP status and the JSON body.
+
+From a terminal, with [Newman](https://learning.postman.com/docs/collections/using-newman-cli/installing-running-newman/) installed:
+
+```bash
+newman run postman/calculator-api.postman_collection.json
+```
+
+Newman uses the collection variable, so this calls `http://localhost:3000`. To run the same collection against `go run ./cmd/server` in `backend/`, set `baseUrl` to `http://localhost:8080` for that run.
 
 ## API Documentation
 
@@ -183,7 +253,14 @@ Success, `200`:
 
 Any other method receives `405` with `Allow: GET`.
 
-Any other path receives the standard library's plain-text `404`.
+Any other path receives `404` JSON:
+
+```json
+{
+  "code": "not_found",
+  "message": "not found"
+}
+```
 
 ## Testing
 
@@ -203,7 +280,7 @@ cd frontend
 npm test
 ```
 
-`npm test` is `vitest run`. The suite has 15 tests.
+`npm test` is `vitest run`. The latest measured run reported 15 tests. Rerunning the command produces the current count.
 
 Backend coverage, from `backend/`:
 
@@ -232,9 +309,9 @@ npm run build
 
 ## Test Coverage
 
-These are the reported results for the commands above. Package percentages are not combined into one backend number.
+These are the latest measured results. Rerunning the coverage commands above produces the current figures. Package percentages are not combined into one backend number.
 
-Frontend, from `npm run test:coverage` (15 tests passed):
+Frontend, from `npm run test:coverage` (15 tests passed in that run):
 
 | Metric | Coverage |
 | --- | --- |
@@ -248,27 +325,28 @@ Backend, from `go test -cover ./...`:
 | Package | Statement coverage |
 | --- | --- |
 | `internal/calculator` | 95.6% |
-| `internal/handler` | 91.2% |
+| `internal/handler` | 91.4% |
 | `cmd/server` | 0% |
 
-`cmd/server` is the process entry point (`main` and port parsing). It currently has no direct test coverage.
+`cmd/server` is the process entry point: port parsing, server timeouts, and signal handling. It currently has no direct test coverage.
 
 ## Design Decisions and Limitations
 
 - The client is a sequential calculator. It does not parse a full expression or apply operator precedence. One binary operation is pending. `=` sends `operation`, `a`, and `b`. After a result, the next operator uses that result as the next left operand, and the next `=` sends a separate request. Pressing `=` again repeats the last completed binary operation. Another operator pressed before a right-hand number replaces the pending operation. If a right-hand number is already displayed, another operator still does not call the API: it keeps the original left operand, switches the operation, and the next digit starts a new right-hand number.
 - Percentage means `b` percent of `a`, `(a * b) / 100`. It does not mean "`a` plus `b` percent." `200 % 15 =` sends `a = 200` and `b = 15` and shows `30` when the API returns that result.
 - Division by zero is rejected before IEEE division. The API returns `400` with code `division_by_zero` and message `division by zero`. The main display shows that message instead of a number. `C` or a new entry clears it.
-- Operands and results are IEEE-754 `float64`. A sum such as `0.1 + 0.2` can differ by normal binary rounding. Percentage divides the larger-magnitude operand by 100 before multiplying, which avoids some intermediate overflow, then rejects a non-finite final value. That does not recover every result that would mathematically fit in a `float64`.
+- Operands and results are IEEE-754 `float64`. See Numeric Precision.
+- The handler rejects malformed JSON, unknown fields, trailing JSON, missing operands, unsupported operations, negative square roots, `0^0`, and non-finite results. Those responses use the codes and messages in the API section.
+- The development proxy only exists while `npm run dev` is running and only forwards `/api` to port `8080`. The API sends no CORS headers. Docker routing is described under Architecture.
+- There is no authentication, persistence, request logging, or rate limiting. `postman/calculator-api.postman_collection.json` covers the health check, the seven operations, and the validation responses.
 
 ### Numeric Precision
 
 The calculator uses Go's `float64` type for arithmetic operations. Floating-point numbers cannot represent every decimal value exactly, so some calculations may produce small rounding differences. For example, `0.1 + 0.2` may produce `0.30000000000000004` rather than exactly `0.3`.
 
-This is an intentional trade-off for a basic calculator. Results are returned as JSON numbers without artificial rounding. The frontend may format results for display, but the API preserves the calculated numeric value.
+Percentage divides the larger-magnitude operand by 100 before multiplying, which avoids some intermediate overflow, then rejects a non-finite final value. That does not recover every result that would mathematically fit in a `float64`.
 
-- The handler rejects malformed JSON, unknown fields, trailing JSON, missing operands, unsupported operations, negative square roots, `0^0`, and non-finite results. Those responses use the codes and messages in the API section.
-- The development proxy only exists while `npm run dev` is running and only forwards `/api` to port `8080`. The static build has no proxy and no CORS headers from the API.
-- There is no authentication, persistence, request logging, or rate limiting. `postman/` contains no collection.
+This is an intentional trade-off for a basic calculator. Results are returned as JSON numbers without artificial rounding. The frontend may format results for display, but the API preserves the calculated numeric value.
 
 ## AI Usage
 

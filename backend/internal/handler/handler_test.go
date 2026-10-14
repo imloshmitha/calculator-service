@@ -281,6 +281,42 @@ func TestHealth(t *testing.T) {
 	})
 }
 
+func TestNotFound(t *testing.T) {
+	t.Parallel()
+
+	mux := NewMux()
+	tests := []struct {
+		name   string
+		method string
+		path   string
+	}{
+		{name: "root", method: http.MethodGet, path: "/"},
+		{name: "unknown path", method: http.MethodGet, path: "/no-such-route"},
+		{name: "unknown api path", method: http.MethodPost, path: "/api/other"},
+		{name: "trailing slash", method: http.MethodGet, path: "/health/"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			req := httptest.NewRequest(tt.method, tt.path, nil)
+			rr := httptest.NewRecorder()
+			mux.ServeHTTP(rr, req)
+
+			if rr.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want 404; body = %s", rr.Code, rr.Body.String())
+			}
+			if got := rr.Header().Get("Content-Type"); got != "application/json" {
+				t.Fatalf("Content-Type = %q, want application/json", got)
+			}
+			code, message := decodeError(t, rr.Body.Bytes())
+			if code != "not_found" || message != "not found" {
+				t.Fatalf("error = %s %s", code, message)
+			}
+		})
+	}
+}
+
 func TestCalculateRejectsOversizedBody(t *testing.T) {
 	t.Parallel()
 

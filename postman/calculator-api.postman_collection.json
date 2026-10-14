@@ -1,0 +1,744 @@
+{
+  "info": {
+    "name": "Calculator API",
+    "description": "Requests for the calculator service. `baseUrl` defaults to http://localhost:3000, where Nginx proxies `/api/` and `/health` to the backend. Success responses are `{\"result\": number}`. Errors are `{\"code\", \"message\"}`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('content type is JSON', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.eql('application/json');",
+                  "});",
+                  "pm.test('status is ok', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({ status: 'ok' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /health is not allowed",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 405', function () {",
+                  "  pm.response.to.have.status(405);",
+                  "});",
+                  "pm.test('Allow is GET', function () {",
+                  "  pm.expect(pm.response.headers.get('Allow')).to.eql('GET');",
+                  "});",
+                  "pm.test('method not allowed', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'method_not_allowed',",
+                  "    message: 'method not allowed'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Operations",
+      "item": [
+        {
+          "name": "Add",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"add\",\n  \"a\": 19,\n  \"b\": 9\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('19 + 9 is 28', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({ result: 28 });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Subtract",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"subtract\",\n  \"a\": 19,\n  \"b\": 6\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('19 - 6 is 13', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({ result: 13 });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Multiply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"multiply\",\n  \"a\": 6,\n  \"b\": 7\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('6 * 7 is 42', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({ result: 42 });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Divide",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"divide\",\n  \"a\": 8,\n  \"b\": 2\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('8 / 2 is 4', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({ result: 4 });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Power",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"power\",\n  \"a\": 2,\n  \"b\": 3\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('2^3 is 8', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({ result: 8 });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Square root",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"sqrt\",\n  \"a\": 9\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('sqrt 9 is 3', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({ result: 3 });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Percentage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"percentage\",\n  \"a\": 200,\n  \"b\": 15\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('15 percent of 200 is 30', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({ result: 30 });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validation and errors",
+      "item": [
+        {
+          "name": "Division by zero",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"divide\",\n  \"a\": 1,\n  \"b\": 0\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('division by zero', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'division_by_zero',",
+                  "    message: 'division by zero'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Negative square root",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"sqrt\",\n  \"a\": -1\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('negative square root', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'negative_sqrt',",
+                  "    message: 'square root of a negative number is not defined'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Zero to the power of zero",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"power\",\n  \"a\": 0,\n  \"b\": 0\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('undefined power', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'undefined_power',",
+                  "    message: 'zero raised to the power of zero is undefined'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Non-finite result",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"power\",\n  \"a\": 1e308,\n  \"b\": 2\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('non-finite result', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'non_finite_result',",
+                  "    message: 'calculation result is not a finite number'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing operation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"a\": 1,\n  \"b\": 2\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('operation is required', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'missing_operation',",
+                  "    message: 'operation is required'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unsupported operation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"modulo\",\n  \"a\": 1,\n  \"b\": 2\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('unsupported operation', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'unsupported_operation',",
+                  "    message: 'operation is not supported: \"modulo\"'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing operand a",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"add\",\n  \"b\": 2\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('operand a is required', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'missing_operand',",
+                  "    message: 'operand a is required'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing operand b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"add\",\n  \"a\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('operand b is required', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'missing_operand',",
+                  "    message: 'operand b is required'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Malformed JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('invalid JSON', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'invalid_json',",
+                  "    message: 'request body must be one JSON object'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown field",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"add\",\n  \"a\": 1,\n  \"b\": 2,\n  \"extra\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('unknown field', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'invalid_json',",
+                  "    message: 'request body contains an unknown field'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trailing JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"operation\":\"add\",\"a\":1,\"b\":2}{\"operation\":\"add\",\"a\":3,\"b\":4}"
+            },
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('trailing JSON', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'invalid_json',",
+                  "    message: 'request body must not contain trailing data'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/calculate is not allowed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/calculate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 405', function () {",
+                  "  pm.response.to.have.status(405);",
+                  "});",
+                  "pm.test('Allow is POST', function () {",
+                  "  pm.expect(pm.response.headers.get('Allow')).to.eql('POST');",
+                  "});",
+                  "pm.test('method not allowed', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({",
+                  "    code: 'method_not_allowed',",
+                  "    message: 'method not allowed'",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,12 +1,12 @@
 # AI usage
 
-These are the prompts collected during development of this calculator. Wording is preserved. Formatting, such as lists and code blocks, was cleaned up. No prompts were added beyond this collection, and the headings do not claim a timeline.
+Entries 1–5 are prompts collected during development. Their wording is preserved. Formatting, such as lists and code blocks, was cleaned up. They are not a complete timeline.
 
-Testing, coverage, and documentation requests appear inside the prompts below. This collection does not include separate prompts for those topics.
+Entries 6–8 are summaries of later work. They are not verbatim prompts. The exact wording of those requests was not kept in this file.
 
-## Go backend implementation
+## 1. Go backend implementation
 
-### Prompt 1: Go Calculator Backend
+### Verbatim prompt: Go Calculator Backend
 
 I am building a full-stack calculator application.
 
@@ -154,7 +154,9 @@ After implementation:
 
 Work within the existing project root. Prioritize correctness, clarity, and maintainability over extra features.
 
-## Backend improvements
+## 2. Backend improvements
+
+### Verbatim prompt
 
 Review the existing Go calculator implementation and make only these targeted improvements:
 
@@ -164,7 +166,9 @@ Review the existing Go calculator implementation and make only these targeted im
 
 Run `gofmt` and `go test ./...` from the backend directory. Report the actual test results and summarize the changes.
 
-## React frontend
+## 3. React frontend
+
+### Verbatim prompt
 
 Build the React frontend for my existing full-stack calculator assignment in the `frontend/` directory.
 
@@ -189,7 +193,9 @@ Requirements:
 
 Do not add authentication, a database, Docker, or hosting requirements.
 
-## UI refinements
+## 4. UI refinements
+
+### Verbatim prompt
 
 In `frontend/src/Calculator.tsx`:
 
@@ -214,7 +220,9 @@ Required changes:
 
 Do not modify the Go backend or change the API error response.
 
-## Calculation behavior
+## 5. Calculation behavior
+
+### Verbatim prompt
 
 Fix the inconsistent calculation timing in the React calculator in `frontend/`.
 
@@ -230,3 +238,50 @@ Expected behavior:
 8. Do not modify the Go backend or unrelated styling.
 
 Inspect the current state management and fix the root cause rather than applying a cosmetic workaround. Add or update tests to verify that binary operations do not call the API until `=` is pressed, and that pressing `=` displays the API result. Run the frontend tests and production build, and report the actual results.
+
+## 6. Server behavior
+
+### Summary, not a verbatim prompt
+
+The API was extended without changing arithmetic or existing error codes. Unknown routes return `404` JSON `{"code":"not_found","message":"not found"}`. `/health` and `/api/calculate` stay as they were. `cmd/server` handles `SIGINT` and `SIGTERM` with `http.Server.Shutdown` and an 8-second limit, and treats `http.ErrServerClosed` as a normal stop. `ReadHeaderTimeout` stays 5 seconds. `ReadTimeout` is 30 seconds, `WriteTimeout` is 15 seconds, and `IdleTimeout` is 120 seconds. Handler tests cover the JSON `404`. `cmd/server` still has no tests.
+
+## 7. Docker, Nginx, and Postman
+
+### Summary, not a verbatim prompt
+
+Docker and a Postman Collection v2.1 file were added. `docker-compose.yml` builds both services, publishes the frontend on host port 3000, and does not publish the backend port. Nginx serves `/`, `/index.html`, `/favicon.svg`, and `/assets/`, and proxies `/api/`, `/health`, and other paths to the Compose service `backend`.
+
+A check of `GET http://localhost:3000/no-such-route` first returned the calculator HTML with status 200, because Nginx sent unknown paths to `index.html`. `docker/nginx.conf` was changed so those paths reach the API. A later check returned `404` and `{"code":"not_found","message":"not found"}`.
+
+The collection has 21 requests. Every URL uses `{{baseUrl}}`. `baseUrl` is `http://localhost:3000`.
+
+## 8. Documentation and ignore rules
+
+### Summary, not a verbatim prompt
+
+`README.md` was revised to match the repository: the public URL `https://github.com/imloshmitha/calculator-service`, Docker and Postman instructions, server timeouts, the JSON `404`, and a Numeric Precision subsection. A sentence that named an employer and a take-home assignment was removed from the README. Handler coverage in the README was updated from 91.2% to 91.4% after `go test -cover ./...`.
+
+Root `.gitignore` gained `frontend/coverage/`. In `backend/.gitignore`, the pattern `server` also ignored `backend/cmd/server/main.go`. It was replaced with `/server`, which ignores only a binary in the backend root.
+
+## Review and verification
+
+These checks were run in this workspace. This file does not claim they were also run by hand outside that work.
+
+| Check | Result |
+| --- | --- |
+| `gofmt -l` on the changed Go files | No output. The files were already formatted. |
+| `go test ./...` from `backend/` | Passed. `internal/calculator` and `internal/handler` ok. `cmd/server` has no test files. |
+| `go vet ./...` from `backend/` | Passed, with no findings. |
+| `go test -cover ./...` from `backend/` | `cmd/server` 0.0%. `internal/calculator` 95.6%. `internal/handler` 91.4%. |
+| `npm test` from `frontend/` | Passed. 15 tests. |
+| `npm run build` from `frontend/` | Passed. |
+| `npm run test:coverage` from `frontend/` | Passed. 15 tests. Statements 64.54% (142/220), branches 56.29% (85/151), functions 88.57% (31/35), lines 64.05% (139/217). |
+| `docker compose config` | Succeeded. |
+| `docker compose up --build -d` | Both containers started. The backend health check reported healthy. |
+| HTTP checks on port 3000 after the Nginx fix | `GET /health` returned 200 `{"status":"ok"}`. `POST /api/calculate` with add `2` and `3` returned 200 `{"result":5}`. Divide `1` by `0` returned 400 `{"code":"division_by_zero","message":"division by zero"}`. `GET /no-such-route` returned 404 `{"code":"not_found","message":"not found"}`. `/`, `/index.html`, `/favicon.svg`, and the built JavaScript file returned 200. |
+| Newman | `newman run postman/calculator-api.postman_collection.json` passed: 21 requests, 45 assertions, 0 failures, using `http://localhost:3000`. |
+| `git diff --check` | Exited 0 for the README edits checked with it. |
+
+`git check-ignore -v backend/cmd/server/main.go` exited 1 after the ignore-rule fix, which means that source file is not ignored.
+
+Issues corrected during these checks are the ignore rule for `cmd/server`, the README coverage figure, and the Nginx fallback that hid the JSON `404`. The containers were left running after the successful port 3000 checks. Whether the UI was exercised manually after that is not recorded here.

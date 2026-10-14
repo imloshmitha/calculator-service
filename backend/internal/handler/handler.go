@@ -68,7 +68,12 @@ func NewMux() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/calculate", Calculate)
 	mux.HandleFunc("/health", Health)
+	mux.HandleFunc("/", notFound)
 	return mux
+}
+
+func notFound(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotFound, "not_found", "not found")
 }
 
 // Health reports that the process is serving requests.
